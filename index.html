@@ -1,0 +1,1295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Site T&C Data Capture — Smart PV Solar</title>
+<meta name="theme-color" content="#155C2C">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SPV Site T&C">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>
+  :root{
+    --green:#1F7A3D; --green-dark:#124023; --green-mid:#1B6B37;
+    --gold:#D6A419; --gold-dark:#9C7712;
+    --teal:#0E8C86; --teal-bg:#E4F5F4;
+    --bg:#F2F5F3; --card:#FFFFFF; --line:#E1E8E3; --line-soft:#EEF2EF;
+    --text:#182420; --muted:#6B7A72; --muted2:#9AA6A0;
+    --pass:#1F9254; --pass-bg:#E4F5EA;
+    --fail:#C0392B; --fail-bg:#FCE8E5;
+    --na:#8A8F98; --na-bg:#ECEEF0;
+    --purple:#6C4EE3; --purple-bg:#EFE9FC; --purple-dark:#4E33B8;
+    --pending-bg:#FFF7E0; --pending-line:#E9C766; --pending-text:#8a6d1a;
+    --gold-bg:#FBF1DA;
+    --radius:16px; --radius-sm:11px;
+    --shadow:0 2px 10px rgba(20,40,30,0.06), 0 1px 2px rgba(20,40,30,0.05);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    overscroll-behavior-y:contain;}
+  #app{max-width:480px;margin:0 auto;min-height:100vh;background:var(--bg);
+    padding-bottom:calc(28px + env(safe-area-inset-bottom));}
+  button{font-family:inherit; cursor:pointer;}
+  svg.ic{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;display:block;}
+
+  /* ===== HEADER ===== */
+  header.topbar{
+    position:sticky;top:0;z-index:30;
+    background:linear-gradient(135deg,var(--green) 0%,var(--green-dark) 100%);
+    color:#fff;padding:calc(12px + env(safe-area-inset-top)) 14px 12px;
+    box-shadow:0 3px 14px rgba(10,30,18,0.18);
+  }
+  .hdr-row{display:flex;align-items:center;gap:10px;}
+  header.topbar img.logo{width:36px;height:36px;border-radius:9px;background:#fff;padding:2px;object-fit:contain;flex-shrink:0;}
+  header.topbar button.back{
+    background:rgba(255,255,255,0.16);border:none;color:#fff;font-size:16px;
+    width:34px;height:34px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  }
+  header.topbar button.back svg{stroke:#fff;}
+  .titles{flex:1;min-width:0;}
+  .t1{font-size:15px;font-weight:700;line-height:1.2;letter-spacing:-.01em;}
+  .t2{font-size:11px;opacity:.82;line-height:1.3;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .sync-pill{
+    display:flex;align-items:center;gap:5px;font-size:10.5px;font-weight:600;
+    padding:6px 10px;border-radius:20px;background:rgba(255,255,255,0.14);
+    white-space:nowrap;flex-shrink:0;border:1px solid rgba(255,255,255,0.18);
+  }
+  .sync-pill .dot{width:7px;height:7px;border-radius:50%;background:#9AA6A0;flex-shrink:0;}
+  .sync-pill .dot.synced{background:#5CD98B; box-shadow:0 0 6px #5CD98B;}
+  .sync-pill .dot.dirty{background:#F5C451; box-shadow:0 0 6px #F5C451;}
+  .site-strip{
+    margin-top:10px;display:flex;align-items:center;gap:8px;
+    background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.14);
+    border-radius:11px;padding:8px 10px;
+  }
+  .site-strip svg{stroke:#EFE3B9;flex-shrink:0;}
+  .site-strip .name{font-size:12.5px;font-weight:700;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .site-strip button{background:rgba(255,255,255,0.16);border:none;color:#fff;font-size:10.5px;font-weight:700;
+    padding:5px 10px;border-radius:8px;}
+
+  main{padding:14px;}
+
+  /* ===== HOME ===== */
+  .summary-strip{display:flex;gap:8px;margin-bottom:16px;}
+  .summary-strip .chip{flex:1;background:var(--card);border:1px solid var(--line);border-radius:13px;
+    padding:12px 6px;text-align:center;box-shadow:var(--shadow);}
+  .summary-strip .chip .num{font-size:20px;font-weight:800;letter-spacing:-.02em;}
+  .summary-strip .chip .lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:3px;font-weight:700;}
+  .summary-strip .chip.pass .num{color:var(--pass);}
+  .summary-strip .chip.fail .num{color:var(--fail);}
+  .summary-strip .chip.pending .num{color:var(--pending-text);}
+
+  .progress-track{height:7px;border-radius:20px;background:var(--line);overflow:hidden;display:flex;margin-bottom:20px;}
+  .progress-track .seg{height:100%;}
+
+  .section-title{font-size:11.5px;font-weight:800;color:var(--muted);text-transform:uppercase;
+    letter-spacing:.07em;margin:18px 3px 9px;display:flex;align-items:center;gap:8px;}
+  .section-title::after{content:'';flex:1;height:1px;background:var(--line);}
+
+  .home-card{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:13px 13px;margin-bottom:9px;display:flex;align-items:center;gap:12px;
+    box-shadow:var(--shadow); transition:transform .1s;
+  }
+  .home-card:active{transform:scale(0.97);}
+  .home-card .ic-wrap{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .ic-wrap.tint-green{background:var(--pass-bg);color:var(--pass);}
+  .ic-wrap.tint-teal{background:var(--teal-bg);color:var(--teal);}
+  .ic-wrap.tint-gold{background:var(--gold-bg);color:var(--gold-dark);}
+  .ic-wrap.tint-grey{background:var(--na-bg);color:var(--muted);}
+  .ic-wrap.tint-purple{background:var(--purple-bg);color:var(--purple-dark);}
+  .home-card .info{flex:1;min-width:0;}
+  .home-card .info .name{font-size:14px;font-weight:700;color:var(--text);letter-spacing:-.005em;}
+  .home-card .info .sub{font-size:11px;color:var(--muted);margin-top:2px;}
+  .home-card .badge{font-size:11px;font-weight:800;padding:5px 10px;border-radius:20px;flex-shrink:0;
+    background:var(--pending-bg);color:var(--pending-text);border:1px solid var(--pending-line);}
+  .home-card .badge.done{background:var(--pass-bg);color:var(--pass);border-color:#bfe6cd;}
+  .home-card .badge.zero{background:var(--na-bg);color:var(--muted2);border-color:#dfe2e6;}
+  .home-card .badge.arrow{background:var(--green);color:#fff;border-color:var(--green);width:26px;height:26px;padding:0;
+    border-radius:50%;display:flex;align-items:center;justify-content:center;}
+  .home-card .badge.arrow svg{width:14px;height:14px;stroke:#fff;}
+
+  /* ===== CHECKLIST ITEM ===== */
+  .item{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:13px 13px;margin-bottom:9px;box-shadow:var(--shadow);}
+  .item .label{font-size:13.5px;font-weight:600;line-height:1.4;margin-bottom:11px;color:var(--text);}
+  .item .sub{font-size:11px;color:var(--muted);margin-top:-7px;margin-bottom:11px;}
+  .seg{display:flex;gap:7px;}
+  .seg button{flex:1;border:1.5px solid var(--line);background:#fff;border-radius:var(--radius-sm);
+    padding:10px 4px;font-size:12px;font-weight:700;color:var(--muted);transition:.12s;}
+  .seg button:active{transform:scale(0.96);}
+  .seg button.pass.on{background:var(--pass-bg);border-color:var(--pass);color:var(--pass);}
+  .seg button.fail.on{background:var(--fail-bg);border-color:var(--fail);color:var(--fail);}
+  .seg button.na.on{background:var(--na-bg);border-color:#8A8F98;color:var(--na);}
+  .remarks-toggle{margin-top:9px;font-size:11.5px;color:var(--green);font-weight:700;background:none;border:none;padding:0;display:flex;align-items:center;gap:5px;}
+  .remarks-box{margin-top:9px;}
+  textarea, input[type=text], input[type=number]{
+    width:100%;border:1.5px solid var(--line);border-radius:var(--radius-sm);padding:10px 11px;
+    font-size:13.5px;font-family:inherit;background:#fcfdfc;color:var(--text);}
+  textarea:focus, input:focus{outline:none;border-color:var(--green);background:#fff;}
+  textarea{resize:vertical;min-height:52px;}
+
+  /* ===== STRINGS ===== */
+  .filter-row{display:flex;gap:7px;margin-bottom:13px;overflow-x:auto;padding-bottom:2px;}
+  .filter-row button{flex-shrink:0;border:1.5px solid var(--line);background:#fff;
+    border-radius:20px;padding:8px 15px;font-size:12px;font-weight:700;color:var(--muted);}
+  .filter-row button.on{background:var(--green);border-color:var(--green);color:#fff;}
+  .str-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);margin-bottom:8px;overflow:hidden;box-shadow:var(--shadow);}
+  .str-head{display:flex;align-items:center;gap:10px;padding:12px 13px;}
+  .str-head .dot{width:10px;height:10px;border-radius:50%;background:#D5DBD7;flex-shrink:0;}
+  .str-head .dot.pass{background:var(--pass);}
+  .str-head .dot.fail{background:var(--fail);}
+  .str-head .id{font-size:13.5px;font-weight:700;flex:1;}
+  .str-head .meta{font-size:11px;color:var(--muted);}
+  .str-head svg{color:var(--muted2);flex-shrink:0;}
+  .str-body{padding:2px 13px 13px;border-top:1px solid var(--line-soft);}
+  .row2{display:flex;gap:9px;margin-top:11px;}
+  .row2>div{flex:1;}
+  .field-lbl{font-size:10.5px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;}
+
+  /* ===== ADD ROW / LISTS ===== */
+  .add-row{display:flex;gap:8px;margin-bottom:13px;}
+  .add-row input{flex:1;}
+  .add-row button{background:var(--green);color:#fff;border:none;border-radius:var(--radius-sm);padding:0 18px;font-weight:800;font-size:19px;}
+  .del-btn{background:var(--fail-bg);color:var(--fail);border:none;border-radius:9px;
+    font-size:11px;font-weight:700;padding:7px 11px;margin-top:9px;}
+
+  .signoff-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:15px;margin-bottom:12px;box-shadow:var(--shadow);}
+  .signoff-card .role{font-size:13.5px;font-weight:800;color:var(--green-mid);margin-bottom:11px;}
+  .field-group{margin-bottom:10px;}
+  .field-group label{font-size:10.5px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:5px;}
+  .note-box{background:var(--gold-bg);border:1px solid #E9C766;border-radius:13px;padding:12px 13px;font-size:12px;color:#6B5417;margin-bottom:15px;line-height:1.45;display:flex;gap:9px;}
+  .note-box svg{flex-shrink:0;stroke:#9C7712;margin-top:1px;}
+
+  /* ===== SETTINGS / SYNC ===== */
+  .settings-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:15px;margin-bottom:14px;box-shadow:var(--shadow);}
+  .settings-card h4{font-size:12.5px;font-weight:800;color:var(--text);margin:0 0 12px;text-transform:uppercase;letter-spacing:.04em;}
+  .site-list-item{display:flex;align-items:center;gap:10px;padding:11px 4px;border-bottom:1px solid var(--line-soft);}
+  .site-list-item:last-child{border-bottom:none;}
+  .site-list-item .rb{width:18px;height:18px;border-radius:50%;border:2px solid var(--line);flex-shrink:0;}
+  .site-list-item.active .rb{border-color:var(--green);background:var(--green);position:relative;}
+  .site-list-item .sname{flex:1;font-size:13.5px;font-weight:600;}
+  .site-list-item .site-del{background:var(--fail-bg);color:var(--fail);border:none;border-radius:8px;
+    width:30px;height:30px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .site-list-item .site-del svg{width:15px;height:15px;}
+  .manager-site-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:14px;margin-bottom:9px;box-shadow:var(--shadow);}
+  .manager-site-card .msc-top{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+  .manager-site-card .msc-name{font-size:14.5px;font-weight:800;flex:1;}
+  .manager-site-card .msc-time{font-size:10.5px;color:var(--muted2);}
+  .msc-chips{display:flex;gap:6px;}
+  .msc-chips .c{flex:1;text-align:center;border-radius:9px;padding:7px 4px;font-size:11px;font-weight:800;}
+  .msc-chips .c.pass{background:var(--pass-bg);color:var(--pass);}
+  .msc-chips .c.fail{background:var(--fail-bg);color:var(--fail);}
+  .msc-chips .c.pending{background:var(--pending-bg);color:var(--pending-text);}
+  .ro-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line-soft);}
+  .ro-row:last-child{border-bottom:none;}
+  .ro-row .lbl{font-size:12.5px;color:var(--text);flex:1;}
+  .ro-chip{font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:20px;flex-shrink:0;}
+  .ro-chip.pass{background:var(--pass-bg);color:var(--pass);}
+  .ro-chip.fail{background:var(--fail-bg);color:var(--fail);}
+  .ro-chip.na, .ro-chip.pending{background:var(--na-bg);color:var(--na);}
+  .admin-unlock{background:var(--purple-bg);border:1px solid #D8CDF7;border-radius:var(--radius);padding:16px;margin-bottom:14px;}
+  .admin-unlock h4{font-size:13px;font-weight:800;color:var(--purple-dark);margin:0 0 8px;}
+  .sync-log-row{display:flex;justify-content:space-between;font-size:11.5px;padding:7px 0;border-bottom:1px solid var(--line-soft);color:var(--muted);}
+  .sync-log-row:last-child{border-bottom:none;}
+  .sync-log-row .st.ok{color:var(--pass);font-weight:700;}
+  .sync-log-row .st.err{color:var(--fail);font-weight:700;}
+
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:var(--green);color:#fff;border:none;border-radius:13px;
+    padding:14px;font-size:14.5px;font-weight:700;margin-bottom:10px;box-shadow:0 3px 10px rgba(31,122,61,0.25);}
+  .btn:active{transform:scale(0.98);}
+  .btn.secondary{background:#fff;color:var(--green);border:1.5px solid var(--green);box-shadow:none;}
+  .btn.danger{background:#fff;color:var(--fail);border:1.5px solid var(--fail);box-shadow:none;}
+  .btn svg{stroke:currentColor;}
+
+  .export-box textarea{min-height:200px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:10px;}
+
+  .toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);
+    background:#182420;color:#fff;padding:10px 18px;border-radius:22px;font-size:12.5px;font-weight:600;
+    opacity:0;transition:opacity .25s, transform .25s; pointer-events:none;z-index:99;box-shadow:0 6px 20px rgba(0,0,0,0.25);
+    max-width:88%;text-align:center;}
+  .toast.show{opacity:1;}
+
+  /* ===== MODAL ===== */
+  .modal-overlay{position:fixed;inset:0;background:rgba(10,20,15,0.55);z-index:200;
+    display:flex;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(2px);}
+  .modal-card{background:#fff;border-radius:20px;padding:24px 22px;max-width:360px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,0.3);}
+  .modal-card .m-icon{width:52px;height:52px;border-radius:14px;background:var(--pass-bg);color:var(--pass);
+    display:flex;align-items:center;justify-content:center;margin-bottom:14px;}
+  .modal-card .m-icon svg{width:26px;height:26px;}
+  .modal-card h3{font-size:17px;font-weight:800;margin:0 0 6px;}
+  .modal-card p{font-size:12.5px;color:var(--muted);margin:0 0 16px;line-height:1.5;}
+  .modal-card input{margin-bottom:14px;}
+
+  .view-fade{animation:vf .22s ease;}
+  @keyframes vf{from{opacity:0;transform:translateY(6px);} to{opacity:1;transform:translateY(0);}}
+  .empty{text-align:center;color:var(--muted2);font-size:12.5px;padding:34px 10px;}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <div class="hdr-row">
+      <button class="back" id="backBtn" style="display:none;"><svg class="ic" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <img class="logo" src="icons/icon-192.png" alt="logo">
+      <div class="titles">
+        <div class="t1" id="hdrTitle">Site T&amp;C Data Capture</div>
+        <div class="t2" id="hdrSub">Smart PV Solar</div>
+      </div>
+      <div class="sync-pill" id="syncPill" onclick="go('settings')"><span class="dot" id="syncDot"></span><span id="syncText">—</span></div>
+    </div>
+    <div class="site-strip" id="siteStrip" style="display:none;" onclick="go('settings')">
+      <svg class="ic" viewBox="0 0 24 24" width="16" height="16"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg>
+      <div class="name" id="siteStripName">—</div>
+      <button onclick="event.stopPropagation(); go('settings')">Switch</button>
+    </div>
+  </header>
+  <main id="main"></main>
+</div>
+<div class="toast" id="toast"></div>
+<div id="modalRoot"></div>
+
+<script>
+/* ============================================================
+   ICONS
+=============================================================*/
+const ICONS = {
+  wrench: '<polygon points="12,3 19,7 19,17 12,21 5,17 5,7"/><circle cx="12" cy="12" r="3"/>',
+  bolt: '<polygon points="13,2 4,14 11,14 9,22 20,10 13,10" fill="currentColor" stroke="none"/>',
+  chip: '<rect x="6" y="6" width="12" height="12" rx="2"/><line x1="9" y1="2" x2="9" y2="6"/><line x1="15" y1="2" x2="15" y2="6"/><line x1="9" y1="18" x2="9" y2="22"/><line x1="15" y1="18" x2="15" y2="22"/><line x1="2" y1="9" x2="6" y2="9"/><line x1="2" y1="15" x2="6" y2="15"/><line x1="18" y1="9" x2="22" y2="9"/><line x1="18" y1="15" x2="22" y2="15"/>',
+  coil: '<path d="M2 12h4l2-5 4 10 2-5h8"/>',
+  tower: '<line x1="12" y1="2" x2="12" y2="22"/><line x1="6" y1="8" x2="18" y2="8"/><line x1="4" y1="14" x2="20" y2="14"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/>',
+  sync: '<path d="M21 12a9 9 0 1 1-3-6.7"/><polyline points="21 3 21 9 15 9"/>',
+  bars: '<line x1="5" y1="20" x2="5" y2="12"/><line x1="12" y1="20" x2="12" y2="7"/><line x1="19" y1="20" x2="19" y2="4"/>',
+  alert: '<path d="M12 3 2 21h20z"/><line x1="12" y1="9" x2="12" y2="14"/><circle cx="12" cy="17.3" r="0.9" fill="currentColor" stroke="none"/>',
+  clipboard: '<rect x="5" y="3" width="14" height="18" rx="2"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/>',
+  ground: '<line x1="12" y1="2" x2="12" y2="12"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="8" y1="16" x2="16" y2="16"/><line x1="10" y1="20" x2="14" y2="20"/>',
+  shield: '<path d="M12 2 4 5v6c0 5 3.5 9 8 11 4.5-2 8-6 8-11V5z"/><polyline points="9,12 11,14 15,10"/>',
+  flag: '<line x1="6" y1="2" x2="6" y2="22"/><path d="M6 3h13l-3 4 3 4H6"/>',
+  gauge: '<circle cx="12" cy="13" r="8"/><line x1="12" y1="13" x2="16" y2="9"/><line x1="8" y1="6" x2="9" y2="7.5"/>',
+  pen: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+  cloud: '<path d="M7 18a4 4 0 0 1-1-7.9A5 5 0 0 1 16 8a3.5 3.5 0 0 1 1 6.9"/><polyline points="12,11 12,19"/><polyline points="9,14 12,11 15,14"/>',
+  settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.6 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.6 1z"/>',
+  arrowRight: '<line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>',
+  building: '<path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/>',
+  info: '<circle cx="12" cy="12" r="9"/><line x1="12" y1="16" x2="12" y2="11"/><circle cx="12" cy="8" r="0.8" fill="currentColor" stroke="none"/>',
+  trash: '<polyline points="3,6 5,6 21,6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>',
+  dashboard: '<rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/>',
+  key: '<circle cx="8" cy="15" r="4"/><path d="M10.8 12.2 19 4"/><path d="M16 7l2 2"/><path d="M13 10l2 2"/>',
+};
+function icon(name, w){ return '<svg class="ic" viewBox="0 0 24 24"' + (w?` style="width:${w}px;height:${w}px"`:'') + '>' + ICONS[name] + '</svg>'; }
+
+/* ============================================================
+   CONFIG
+=============================================================*/
+const CHECKLIST_SECTIONS = [
+  { id:'mechanical', icon:'wrench', tint:'green', name:'Mechanical Inspection', sub:'Structures, modules, cabling',
+    items:[
+      "Structure foundation and bolt torque check",
+      "Module mounting, orientation and tilt angle verification",
+      "Module visual inspection (damage, micro-cracks, hotspots)",
+      "Module cleanliness",
+      "DC cable routing, dressing and UV-rated conduit installation",
+      "Cable gland and termination inspection",
+      "Structure earthing continuity",
+      "Lightning protection system installed and continuous",
+      "Labeling — string IDs, combiner box IDs, danger signage",
+      "Civil works complete — trench backfill, boundary/fencing",
+      "General site housekeeping",
+    ]},
+  { id:'dcSystem', icon:'bolt', tint:'green', name:'DC System Checks', sub:'Visual, earthing, combiner box',
+    items:[
+      "DC cabling correctly sized and identified",
+      "Connectors (MC4 or equivalent) correctly mated, no visible damage",
+      "String fuses / combiner box fuses correctly rated and fitted",
+      "Surge protection devices (DC SPD) installed and healthy",
+      "Equipotential bonding / earthing continuity — DC side",
+      "Combiner box door interlocks and IP rating verified",
+      "String monitoring / combiner box communication functional",
+    ]},
+  { id:'inverter', icon:'chip', tint:'green', name:'Inverter Commissioning', sub:'Inv-01 / Inv-02 / Inv-03',
+    items:[
+      "Firmware / software version verified and recorded",
+      "Config settings — V/F ride-through, power factor, reactive power mode",
+      "Master–Slave communication link test",
+      "DC input voltage/current per inverter matches expected value",
+      "AC output voltage and frequency within nameplate range",
+      "Insulation resistance test — AC side",
+      "Protection settings verified against Grid Code",
+      "Anti-islanding protection test",
+      "Fault / alarm log reviewed and cleared",
+      "Inverter chassis and cable-gland earthing verified",
+    ]},
+  { id:'transformer', icon:'coil', tint:'green', name:'Transformer Testing', sub:'1500 kVA',
+    items:[
+      "Visual inspection — oil leakage, bushings, gaskets, breather",
+      "Insulation resistance (HV–LV, HV–E, LV–E)",
+      "Winding resistance per phase (<2% deviation)",
+      "Turns ratio test (<0.5% deviation)",
+      "Vector group verification",
+      "Oil dielectric breakdown voltage (BDV ≥30kV/2.5mm)",
+      "Tap changer operation check",
+      "Buchholz relay / temperature protection check",
+      "Transformer body and neutral earthing verified",
+    ]},
+  { id:'mvPanel', icon:'tower', tint:'green', name:'MV Switchgear', sub:'11kV · 25kA · 630A',
+    items:[
+      "Visual and mechanical inspection of panel",
+      "HV insulation resistance (phase-phase, phase-earth)",
+      "HV withstand / dielectric test (if performed)",
+      "CT / PT ratio and polarity test",
+      "Protection relay calibration and functional test",
+      "Breaker / switch operation and interlock test",
+      "Cable termination inspection (HV cable box)",
+      "Panel earthing and busbar continuity verified",
+    ]},
+  { id:'gridSync', icon:'sync', tint:'green', name:'Grid Synchronization', sub:'POI & sync sequence',
+    items:[
+      "Pre-sync checks — voltage magnitude & phase sequence match",
+      "Synchronization sequence test",
+      "POI metering verified — CT/PT ratio, meter accuracy class",
+      "Power flow direction verified at POI",
+      "DISCO / grid operator witness test completed (if required)",
+    ]},
+  { id:'performance', icon:'bars', tint:'green', name:'Performance Test', sub:'Energization & output',
+    items:[
+      "Initial energization sequence logged",
+      "Ramp-up test performed without nuisance tripping",
+      "Full-capacity verification vs. irradiance / performance ratio",
+      "SCADA / monitoring data cross-checked against site measurement",
+      "String-level monitoring functional check",
+      "Remote data logging and communication verified",
+    ]},
+  { id:'safety', icon:'alert', tint:'green', name:'Safety Compliance', sub:'PPE, LOTO, fire safety',
+    items:[
+      "PPE compliance verified for all testing personnel",
+      "Lock-out / Tag-out (LOTO) procedure followed",
+      "Fire safety equipment available and inspected",
+      "Emergency shutdown procedure tested",
+    ]},
+];
+
+const EARTH_POINTS = [
+  { key:'structures', label:'Structure earth pits (sample)', limit:'≤5 Ω (typ.)' },
+  { key:'inv01', label:'Inverter earth pit — Inv-01', limit:'≤5 Ω' },
+  { key:'inv02', label:'Inverter earth pit — Inv-02', limit:'≤5 Ω' },
+  { key:'inv03', label:'Inverter earth pit — Inv-03', limit:'≤5 Ω' },
+  { key:'xfmr', label:'Transformer neutral earth pit', limit:'≤2 Ω' },
+  { key:'mv', label:'MV panel earth pit', limit:'≤1 Ω' },
+  { key:'grid', label:'Overall earth grid (main earth bar)', limit:'≤1 Ω' },
+  { key:'la', label:'Lightning arrestor earth pit', limit:'≤10 Ω' },
+];
+const EARTH_CHECKS = [
+  "Continuity verified — structures/inverters/transformer/MV panel to main earth grid",
+  "Lightning protection continuity and functional check",
+];
+
+const PROTECTION_ITEMS = [
+  { key:'ovuv', label:'Over / Under Voltage trip', ref:'Commonly DISCO-specified*' },
+  { key:'ofuf', label:'Over / Under Frequency trip', ref:'Commonly DISCO-specified*' },
+  { key:'antiisl', label:'Anti-islanding trip time', ref:'Commonly DISCO-specified*' },
+  { key:'revpower', label:'Reverse power protection', ref:'Per relay design setting' },
+  { key:'sync25', label:'Synchronization-check relay (25)', ref:'Per relay design setting' },
+  { key:'thd', label:'THD at POI', ref:'Per DISCO metering code (IEC ref. ≤5%)' },
+];
+
+const DEFAULT_PUNCHLIST = [
+  "7 idle structures (36 installed vs 29 energized) — confirm future use vs spare",
+  "Uneven inverter loading — Inv-01 280kWp vs Inv-03 420kWp; confirm intentional",
+  '"800V" inverter spec — confirm DC max input vs AC output rating',
+  "Plant GPS coordinates not yet recorded",
+  "Transformer vector group and cooling type — TBD",
+  "MV panel type and protection relay model — TBD",
+];
+
+const DEFAULT_EQUIPMENT = [
+  "Insulation Resistance Tester (Megger)",
+  "Earth Resistance Tester",
+  "Clamp Meter",
+  "Digital Multimeter",
+  "Power Quality Analyzer",
+  "IR Camera (thermal)",
+];
+
+const INV_PLAN = [ { name:'Inv-01', code:'INV01', strings:16 }, { name:'Inv-02', code:'INV02', strings:18 }, { name:'Inv-03', code:'INV03', strings:24 } ];
+
+function buildDefaultStrings(){
+  const out = [];
+  INV_PLAN.forEach(inv=>{
+    for(let i=1;i<=inv.strings;i++){
+      out.push({ id: inv.code+'-STR'+String(i).padStart(2,'0'), inverter: inv.name, modules:28,
+        polarity:null, voc:'', ir:'', result:null });
+    }
+  });
+  return out;
+}
+
+/* ============================================================
+   INDEXEDDB LAYER (offline-first, per-device)
+=============================================================*/
+const DB_NAME = 'SmartPVSolarTC';
+const DB_VERSION = 1;
+const STORE = 'kv';
+let dbFailed = false;
+let memFallback = {};
+
+function openDB(){
+  return new Promise((resolve, reject)=>{
+    if(!('indexedDB' in window)){ reject(new Error('no indexeddb')); return; }
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = ()=>{ req.result.createObjectStore(STORE); };
+    req.onsuccess = ()=> resolve(req.result);
+    req.onerror = ()=> reject(req.error);
+  });
+}
+async function idbGet(key){
+  if(dbFailed) return memFallback[key];
+  try{
+    const db = await openDB();
+    return await new Promise((resolve,reject)=>{
+      const tx = db.transaction(STORE,'readonly');
+      const r = tx.objectStore(STORE).get(key);
+      r.onsuccess = ()=> resolve(r.result);
+      r.onerror = ()=> reject(r.error);
+    });
+  }catch(e){ dbFailed = true; return memFallback[key]; }
+}
+async function idbDelete(key){
+  if(dbFailed){ delete memFallback[key]; return true; }
+  try{
+    const db = await openDB();
+    return await new Promise((resolve,reject)=>{
+      const tx = db.transaction(STORE,'readwrite');
+      tx.objectStore(STORE).delete(key);
+      tx.oncomplete = ()=> resolve(true);
+      tx.onerror = ()=> reject(tx.error);
+    });
+  }catch(e){ dbFailed = true; delete memFallback[key]; return true; }
+}
+async function idbSet(key, val){
+  if(dbFailed){ memFallback[key] = val; return true; }
+  try{
+    const db = await openDB();
+    return await new Promise((resolve,reject)=>{
+      const tx = db.transaction(STORE,'readwrite');
+      tx.objectStore(STORE).put(val, key);
+      tx.oncomplete = ()=> resolve(true);
+      tx.onerror = ()=> reject(tx.error);
+    });
+  }catch(e){ dbFailed = true; memFallback[key] = val; return true; }
+}
+
+/* ============================================================
+   STATE
+=============================================================*/
+const state = {};
+let activeSite = null;
+let knownSites = [];
+let syncConfig = { url:'', secret:'' };
+let syncLog = [];
+let saveTimer = null;
+let dirtyCount = 0;
+
+function skey(id){ return 'data:' + activeSite + ':' + id; }
+
+async function loadKey(key, fallback){
+  const v = await idbGet(key);
+  if(v === undefined || v === null) return fallback;
+  try{ return JSON.parse(v); }catch(e){ return fallback; }
+}
+function queueSave(id){
+  dirtyCount++;
+  updateSyncPill();
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async ()=>{
+    await idbSet(skey(id), JSON.stringify(state[id]));
+  }, 400);
+}
+
+async function loadSiteData(){
+  for(const s of CHECKLIST_SECTIONS){
+    state[s.id] = await loadKey(skey(s.id), s.items.map(()=>({status:null, remarks:''})));
+  }
+  state.strings = await loadKey(skey('strings'), buildDefaultStrings());
+  state.earthing = await loadKey(skey('earthing'), {
+    measures: Object.fromEntries(EARTH_POINTS.map(p=>[p.key,{value:'',result:null}])),
+    checks: EARTH_CHECKS.map(()=>({status:null, remarks:''})),
+  });
+  state.protection = await loadKey(skey('protection'), Object.fromEntries(PROTECTION_ITEMS.map(p=>[p.key,{applied:'',result:null}])));
+  state.punchlist = await loadKey(skey('punchlist'), DEFAULT_PUNCHLIST.map(t=>({text:t, status:'Open', remarks:''})));
+  state.equipment = await loadKey(skey('equipment'), DEFAULT_EQUIPMENT.map(n=>({name:n, model:'', serial:'', cal:'', due:''})));
+  state.signoff = await loadKey(skey('signoff'), {
+    engineer:{name:'',designation:'',date:''},
+    supervisor:{name:'',designation:'',date:''},
+    mes:{name:'',designation:'',date:''},
+  });
+  dirtyCount = (await loadKey('meta:dirty:'+activeSite, 0)) || 0;
+}
+
+async function loadMeta(){
+  knownSites = await loadKey('meta:sites', []);
+  activeSite = await loadKey('meta:activeSite', null);
+  syncConfig = await loadKey('meta:config', { url:'', secret:'', adminKey:'' });
+  syncLog = await loadKey('meta:synclog', []);
+}
+async function saveMeta(){
+  await idbSet('meta:sites', JSON.stringify(knownSites));
+  await idbSet('meta:activeSite', JSON.stringify(activeSite));
+}
+
+/* ============================================================
+   TOAST / MODAL
+=============================================================*/
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(()=>t.classList.remove('show'), 1900);
+}
+function showModal(inner){
+  const root = document.getElementById('modalRoot');
+  root.innerHTML = `<div class="modal-overlay" id="modalOverlay"><div class="modal-card">${inner}</div></div>`;
+}
+function closeModal(){ document.getElementById('modalRoot').innerHTML = ''; }
+
+function promptNewSite(isFirstRun){
+  const body = `
+    <div class="m-icon">${icon('building',26)}</div>
+    <h3>${isFirstRun ? 'Welcome — set up your site' : 'Add a new site'}</h3>
+    <p>${isFirstRun ? 'Enter the project/site name. All checklists, string tests and readings you capture will be tagged to this site.' : 'Enter a name for the new site. Data already captured for other sites stays saved and can be switched back to anytime.'}</p>
+    <input type="text" id="newSiteInput" placeholder="e.g. MES Okara Cantt" autofocus>
+    <button class="btn" onclick="confirmNewSite(${isFirstRun ? 'true':'false'})">Continue ${icon('arrowRight',16)}</button>
+  `;
+  showModal(body);
+}
+async function confirmNewSite(isFirstRun){
+  const inp = document.getElementById('newSiteInput');
+  const name = (inp.value || '').trim();
+  if(!name){ inp.focus(); return; }
+  if(!knownSites.includes(name)) knownSites.push(name);
+  activeSite = name;
+  await saveMeta();
+  closeModal();
+  await loadSiteData();
+  currentView = 'home';
+  render();
+}
+
+/* ============================================================
+   NAV
+=============================================================*/
+let currentView = 'home';
+let currentFilter = 'All';
+
+function go(view){
+  currentView = view;
+  render();
+  window.scrollTo(0,0);
+}
+document.getElementById('backBtn').addEventListener('click', ()=>{
+  if(currentView === 'managerDetail') go('manager');
+  else go('home');
+});
+
+function setHeader(title, sub, showBack){
+  document.getElementById('hdrTitle').textContent = title;
+  document.getElementById('hdrSub').textContent = sub;
+  document.getElementById('backBtn').style.display = showBack ? 'flex' : 'none';
+  document.getElementById('siteStrip').style.display = showBack ? 'none' : 'flex';
+}
+function updateSyncPill(){
+  const dot = document.getElementById('syncDot');
+  const txt = document.getElementById('syncText');
+  if(!dot) return;
+  if(dirtyCount > 0){
+    dot.className = 'dot dirty';
+    txt.textContent = dirtyCount + ' unsynced';
+  } else {
+    dot.className = 'dot synced';
+    txt.textContent = 'Synced';
+  }
+}
+
+/* ============================================================
+   PROGRESS HELPERS
+=============================================================*/
+function checklistProgress(id){ const arr = state[id]; return { done: arr.filter(x=>x.status).length, total: arr.length }; }
+function earthingProgress(){
+  const m = Object.values(state.earthing.measures).filter(x=>x.value!=='').length;
+  const c = state.earthing.checks.filter(x=>x.status).length;
+  return { done: m+c, total: EARTH_POINTS.length + EARTH_CHECKS.length };
+}
+function protectionProgress(){ return { done: Object.values(state.protection).filter(x=>x.result).length, total: PROTECTION_ITEMS.length }; }
+function stringsProgress(){ return { done: state.strings.filter(s=>s.result).length, total: state.strings.length }; }
+function signoffProgress(){ const v = Object.values(state.signoff); return { done: v.filter(x=>x.name && x.date).length, total: v.length }; }
+
+/* ============================================================
+   RENDER: HOME
+=============================================================*/
+function renderHome(){
+  setHeader('Site T&C Data Capture', activeSite || 'Smart PV Solar', false);
+  document.getElementById('siteStripName').textContent = activeSite || '—';
+
+  let pass=0, fail=0, pending=0;
+  CHECKLIST_SECTIONS.forEach(s=> state[s.id].forEach(it=>{ if(it.status==='pass')pass++; else if(it.status==='fail')fail++; else pending++; }));
+  state.strings.forEach(s=>{ if(s.result==='pass')pass++; else if(s.result==='fail')fail++; else pending++; });
+  const tot = pass+fail+pending || 1;
+
+  let html = `<div class="summary-strip">
+    <div class="chip pass"><div class="num">${pass}</div><div class="lbl">Pass</div></div>
+    <div class="chip fail"><div class="num">${fail}</div><div class="lbl">Fail</div></div>
+    <div class="chip pending"><div class="num">${pending}</div><div class="lbl">Pending</div></div>
+  </div>
+  <div class="progress-track">
+    <div class="seg" style="width:${pass/tot*100}%;background:var(--pass)"></div>
+    <div class="seg" style="width:${fail/tot*100}%;background:var(--fail)"></div>
+    <div class="seg" style="width:${pending/tot*100}%;background:var(--pending-line)"></div>
+  </div>`;
+
+  html += `<div class="section-title">Checklists</div>`;
+  CHECKLIST_SECTIONS.forEach(s=> html += homeCard(s.id, s.icon, s.tint, s.name, s.sub, checklistProgress(s.id)));
+
+  html += `<div class="section-title">Measurement Logs</div>`;
+  html += homeCard('strings','clipboard','teal','String Test Log','58 strings — polarity, Voc, IR', stringsProgress());
+  html += homeCard('earthing','ground','teal','Earthing & Lightning','8 measurement points', earthingProgress());
+  html += homeCard('protection','shield','teal','Protection & Grid Code','6 protection functions', protectionProgress());
+
+  html += `<div class="section-title">Site Records</div>`;
+  html += homeCard('punchlist','flag','gold','Punch List', state.punchlist.length+' item(s)', {done:state.punchlist.filter(p=>p.status==='Closed').length, total: state.punchlist.length});
+  html += homeCard('equipment','gauge','gold','Test Equipment Register', state.equipment.length+' instrument(s)', {done:state.equipment.filter(e=>e.model||e.serial).length, total: state.equipment.length});
+  html += homeCard('signoff','pen','gold','Sign-Off','Engineer · Supervisor · MES', signoffProgress());
+
+  html += `<div class="section-title">Sync &amp; Export</div>`;
+  html += homeCard('settings','settings','grey','Sync Settings','Google Sheet connection', null);
+  html += homeCard('export','cloud','grey','Export / Sync Now','Push data or copy JSON', null);
+
+  html += `<div class="section-title">Manager</div>`;
+  html += homeCard('manager','dashboard','purple','Manager Dashboard','View all synced sites (admin key)', null);
+
+  document.getElementById('main').innerHTML = `<div class="view-fade">${html}</div>`;
+  document.querySelectorAll('.home-card').forEach(el=> el.addEventListener('click', ()=> go(el.dataset.view)));
+  updateSyncPill();
+}
+function homeCard(view, iconName, tint, name, sub, pr){
+  let badge;
+  if(pr){
+    const cls = pr.done===0 ? 'zero' : (pr.done===pr.total ? 'done' : '');
+    badge = `<div class="badge ${cls}">${pr.done}/${pr.total}</div>`;
+  } else {
+    badge = `<div class="badge arrow">${icon('arrowRight',14)}</div>`;
+  }
+  return `<div class="home-card" data-view="${view}">
+    <div class="ic-wrap tint-${tint}">${icon(iconName)}</div>
+    <div class="info"><div class="name">${name}</div><div class="sub">${sub}</div></div>
+    ${badge}
+  </div>`;
+}
+
+/* ============================================================
+   RENDER: CHECKLIST
+=============================================================*/
+function renderChecklist(sectionId){
+  const s = CHECKLIST_SECTIONS.find(x=>x.id===sectionId);
+  setHeader(s.name, s.sub, true);
+  let html = '';
+  s.items.forEach((label, idx)=>{
+    const it = state[sectionId][idx];
+    html += `<div class="item">
+      <div class="label">${idx+1}. ${label}</div>
+      <div class="seg">
+        <button class="pass ${it.status==='pass'?'on':''}" onclick="setStatus('${sectionId}',${idx},'pass')">Pass</button>
+        <button class="fail ${it.status==='fail'?'on':''}" onclick="setStatus('${sectionId}',${idx},'fail')">Fail</button>
+        <button class="na ${it.status==='na'?'on':''}" onclick="setStatus('${sectionId}',${idx},'na')">N/A</button>
+      </div>
+      <button class="remarks-toggle" onclick="toggleRemarks(this)">${icon('pen',13)} ${it.remarks ? 'Edit remarks' : 'Add remarks'}</button>
+      <div class="remarks-box" style="display:${it.remarks?'block':'none'}">
+        <textarea placeholder="Remarks (optional)" oninput="setRemarks('${sectionId}',${idx},this.value)">${it.remarks||''}</textarea>
+      </div>
+    </div>`;
+  });
+  document.getElementById('main').innerHTML = `<div class="view-fade">${html}</div>`;
+}
+function setStatus(sectionId, idx, val){
+  const it = state[sectionId][idx];
+  it.status = (it.status===val) ? null : val;
+  queueSave(sectionId); render();
+}
+function setRemarks(sectionId, idx, val){ state[sectionId][idx].remarks = val; queueSave(sectionId); }
+function toggleRemarks(btn){ const box = btn.nextElementSibling; box.style.display = box.style.display==='none' ? 'block' : 'none'; }
+
+/* ============================================================
+   RENDER: STRINGS
+=============================================================*/
+function renderStrings(){
+  setHeader('String Test Log', '58 strings — tap to expand', true);
+  let html = `<div class="filter-row">
+    ${['All','Inv-01','Inv-02','Inv-03'].map(f=>`<button class="${currentFilter===f?'on':''}" onclick="setFilter('${f}')">${f}</button>`).join('')}
+  </div>`;
+  state.strings.forEach((s, realIdx)=>{
+    if(currentFilter!=='All' && s.inverter!==currentFilter) return;
+    const dotClass = s.result==='pass'?'pass':(s.result==='fail'?'fail':'');
+    html += `<div class="str-card">
+      <div class="str-head" onclick="toggleStr(this)">
+        <div class="dot ${dotClass}"></div>
+        <div class="id">${s.id}</div>
+        <div class="meta">${s.inverter} · ${s.modules} mod</div>
+        ${icon('arrowRight',15)}
+      </div>
+      <div class="str-body" style="display:none">
+        <div class="field-lbl">Polarity</div>
+        <div class="seg">
+          <button class="pass ${s.polarity==='ok'?'on':''}" onclick="setStrField(${realIdx},'polarity','ok')">OK</button>
+          <button class="fail ${s.polarity==='reverse'?'on':''}" onclick="setStrField(${realIdx},'polarity','reverse')">Reverse</button>
+        </div>
+        <div class="row2">
+          <div><div class="field-lbl">Measured Voc (V)</div>
+            <input type="number" inputmode="decimal" value="${s.voc}" oninput="setStrField(${realIdx},'voc',this.value)"></div>
+          <div><div class="field-lbl">IR (MΩ)</div>
+            <input type="number" inputmode="decimal" value="${s.ir}" oninput="setStrField(${realIdx},'ir',this.value)"></div>
+        </div>
+        <div class="field-lbl" style="margin-top:11px;">Result</div>
+        <div class="seg">
+          <button class="pass ${s.result==='pass'?'on':''}" onclick="setStrField(${realIdx},'result','pass')">Pass</button>
+          <button class="fail ${s.result==='fail'?'on':''}" onclick="setStrField(${realIdx},'result','fail')">Fail</button>
+        </div>
+      </div>
+    </div>`;
+  });
+  document.getElementById('main').innerHTML = `<div class="view-fade">${html}</div>`;
+}
+function setFilter(f){ currentFilter = f; render(); }
+function toggleStr(headEl){ const body = headEl.nextElementSibling; body.style.display = body.style.display==='none' ? 'block' : 'none'; }
+function setStrField(idx, field, val){
+  const s = state.strings[idx];
+  if(field==='polarity' || field==='result'){ s[field] = (s[field]===val) ? null : val; }
+  else { s[field] = val; }
+  queueSave('strings');
+  if(field==='polarity' || field==='result') render();
+}
+
+/* ============================================================
+   RENDER: EARTHING
+=============================================================*/
+function renderEarthing(){
+  setHeader('Earthing & Lightning', 'Resistance readings', true);
+  let html = `<div class="section-title">Resistance Readings</div>`;
+  EARTH_POINTS.forEach(p=>{
+    const m = state.earthing.measures[p.key];
+    html += `<div class="item">
+      <div class="label">${p.label}</div>
+      <div class="sub">Typical limit: ${p.limit}</div>
+      <div class="row2" style="margin-top:0;">
+        <div><div class="field-lbl">Measured (Ω)</div>
+          <input type="number" inputmode="decimal" value="${m.value}" oninput="setEarthVal('${p.key}',this.value)"></div>
+        <div><div class="field-lbl">Result</div>
+          <div class="seg">
+            <button class="pass ${m.result==='pass'?'on':''}" onclick="setEarthResult('${p.key}','pass')">Pass</button>
+            <button class="fail ${m.result==='fail'?'on':''}" onclick="setEarthResult('${p.key}','fail')">Fail</button>
+          </div></div>
+      </div>
+    </div>`;
+  });
+  html += `<div class="section-title">Continuity Checks</div>`;
+  EARTH_CHECKS.forEach((label, idx)=>{
+    const it = state.earthing.checks[idx];
+    html += `<div class="item">
+      <div class="label">${label}</div>
+      <div class="seg">
+        <button class="pass ${it.status==='pass'?'on':''}" onclick="setEarthCheck(${idx},'pass')">Pass</button>
+        <button class="fail ${it.status==='fail'?'on':''}" onclick="setEarthCheck(${idx},'fail')">Fail</button>
+        <button class="na ${it.status==='na'?'on':''}" onclick="setEarthCheck(${idx},'na')">N/A</button>
+      </div>
+    </div>`;
+  });
+  document.getElementById('main').innerHTML = `<div class="view-fade">${html}</div>`;
+}
+function setEarthVal(key, val){ state.earthing.measures[key].value = val; queueSave('earthing'); }
+function setEarthResult(key, val){ const m = state.earthing.measures[key]; m.result = (m.result===val)?null:val; queueSave('earthing'); render(); }
+function setEarthCheck(idx, val){ const it = state.earthing.checks[idx]; it.status = (it.status===val)?null:val; queueSave('earthing'); render(); }
+
+/* ============================================================
+   RENDER: PROTECTION
+=============================================================*/
+function renderProtection(){
+  setHeader('Protection & Grid Code', 'IEC + Pakistan Grid Code', true);
+  let html = '';
+  PROTECTION_ITEMS.forEach(p=>{
+    const v = state.protection[p.key];
+    html += `<div class="item">
+      <div class="label">${p.label}</div>
+      <div class="sub">Reference: ${p.ref}</div>
+      <div class="field-lbl">Applied Setting</div>
+      <input type="text" value="${v.applied}" oninput="setProtField('${p.key}','applied',this.value)" placeholder="e.g. 253V trip / 0.5s">
+      <div class="field-lbl" style="margin-top:11px;">Test Result</div>
+      <div class="seg">
+        <button class="pass ${v.result==='pass'?'on':''}" onclick="setProtResult('${p.key}','pass')">Pass</button>
+        <button class="fail ${v.result==='fail'?'on':''}" onclick="setProtResult('${p.key}','fail')">Fail</button>
+      </div>
+    </div>`;
+  });
+  document.getElementById('main').innerHTML = `<div class="view-fade">${html}</div>`;
+}
+function setProtField(key, field, val){ state.protection[key][field] = val; queueSave('protection'); }
+function setProtResult(key, val){ const v = state.protection[key]; v.result = (v.result===val)?null:val; queueSave('protection'); render(); }
+
+/* ============================================================
+   RENDER: PUNCHLIST
+=============================================================*/
+function renderPunchlist(){
+  setHeader('Punch List', 'Open items', true);
+  let html = `<div class="add-row"><input type="text" id="newPunchInput" placeholder="Add new item..."><button onclick="addPunch()">+</button></div>`;
+  state.punchlist.forEach((it, idx)=>{
+    html += `<div class="item">
+      <div class="label">${idx+1}. ${it.text}</div>
+      <div class="seg">
+        <button class="fail ${it.status==='Open'?'on':''}" onclick="setPunchStatus(${idx},'Open')">Open</button>
+        <button class="pass ${it.status==='Closed'?'on':''}" onclick="setPunchStatus(${idx},'Closed')">Closed</button>
+      </div>
+      <div class="remarks-box" style="display:block;margin-top:9px;">
+        <textarea placeholder="Remarks" oninput="setPunchRemarks(${idx},this.value)">${it.remarks||''}</textarea>
+      </div>
+      <button class="del-btn" onclick="delPunch(${idx})">Remove</button>
+    </div>`;
+  });
+  document.getElementById('main').innerHTML = `<div class="view-fade">${html}</div>`;
+}
+function addPunch(){
+  const inp = document.getElementById('newPunchInput');
+  if(!inp.value.trim()) return;
+  state.punchlist.push({text: inp.value.trim(), status:'Open', remarks:''});
+  queueSave('punchlist'); render();
+}
+function setPunchStatus(idx, val){ state.punchlist[idx].status = val; queueSave('punchlist'); render(); }
+function setPunchRemarks(idx, val){ state.punchlist[idx].remarks = val; queueSave('punchlist'); }
+function delPunch(idx){ state.punchlist.splice(idx,1); queueSave('punchlist'); render(); }
+
+/* ============================================================
+   RENDER: EQUIPMENT
+=============================================================*/
+function renderEquipment(){
+  setHeader('Test Equipment Register', 'Instruments & calibration', true);
+  let html = `<div class="add-row"><input type="text" id="newEquipInput" placeholder="Add instrument..."><button onclick="addEquip()">+</button></div>`;
+  state.equipment.forEach((e, idx)=>{
+    html += `<div class="item">
+      <div class="label">${e.name}</div>
+      <div class="field-lbl">Model</div>
+      <input type="text" value="${e.model}" oninput="setEquipField(${idx},'model',this.value)">
+      <div class="row2" style="margin-top:9px;">
+        <div><div class="field-lbl">Serial No.</div><input type="text" value="${e.serial}" oninput="setEquipField(${idx},'serial',this.value)"></div>
+        <div><div class="field-lbl">Cal. Cert No.</div><input type="text" value="${e.cal}" oninput="setEquipField(${idx},'cal',this.value)"></div>
+      </div>
+      <div class="field-lbl" style="margin-top:9px;">Cal. Due Date</div>
+      <input type="text" value="${e.due}" oninput="setEquipField(${idx},'due',this.value)" placeholder="dd-mm-yyyy">
+      <button class="del-btn" onclick="delEquip(${idx})">Remove</button>
+    </div>`;
+  });
+  document.getElementById('main').innerHTML = `<div class="view-fade">${html}</div>`;
+}
+function addEquip(){
+  const inp = document.getElementById('newEquipInput');
+  if(!inp.value.trim()) return;
+  state.equipment.push({name:inp.value.trim(), model:'', serial:'', cal:'', due:''});
+  queueSave('equipment'); render();
+}
+function setEquipField(idx, field, val){ state.equipment[idx][field] = val; queueSave('equipment'); }
+function delEquip(idx){ state.equipment.splice(idx,1); queueSave('equipment'); render(); }
+
+/* ============================================================
+   RENDER: SIGNOFF
+=============================================================*/
+function renderSignoff(){
+  setHeader('Sign-Off', 'Captured on-site', true);
+  let html = `<div class="note-box">${icon('info',16)}<div>Typed names/designations only. Physical wet signatures will be taken on the final printed report.</div></div>`;
+  const roles = [ ['engineer','Engineer — Smart PV Solar'], ['supervisor','Supervisor — Smart PV Solar'], ['mes','Representative — MES Okara Cantt'] ];
+  roles.forEach(([key,label])=>{
+    const v = state.signoff[key];
+    html += `<div class="signoff-card">
+      <div class="role">${label}</div>
+      <div class="field-group"><label>Name</label><input type="text" value="${v.name}" oninput="setSignoff('${key}','name',this.value)"></div>
+      <div class="field-group"><label>Designation</label><input type="text" value="${v.designation}" oninput="setSignoff('${key}','designation',this.value)"></div>
+      <div class="field-group"><label>Date</label><input type="text" placeholder="dd-mm-yyyy" value="${v.date}" oninput="setSignoff('${key}','date',this.value)"></div>
+    </div>`;
+  });
+  document.getElementById('main').innerHTML = `<div class="view-fade">${html}</div>`;
+}
+function setSignoff(role, field, val){ state.signoff[role][field] = val; queueSave('signoff'); }
+
+/* ============================================================
+   RENDER: SETTINGS (site switcher + sync config)
+=============================================================*/
+function renderSettings(){
+  setHeader('Sync Settings', 'Site & Google Sheet connection', true);
+  let html = `<div class="settings-card">
+    <h4>${icon('building',14)} Sites on this device</h4>`;
+  knownSites.forEach(name=>{
+    const esc = name.replace(/'/g,"\\\\'");
+    html += `<div class="site-list-item ${name===activeSite?'active':''}">
+      <div class="rb" onclick="switchSite('${esc}')"></div>
+      <div class="sname" onclick="switchSite('${esc}')">${name}</div>
+      <button class="site-del" onclick="event.stopPropagation(); deleteSite('${esc}')">${icon('trash',15)}</button>
+    </div>`;
+  });
+  html += `</div>
+  <button class="btn secondary" onclick="promptNewSite(false)">${icon('building',16)} Add New Site</button>
+  <p style="font-size:11px;color:var(--muted);margin:-4px 0 16px;line-height:1.5;">Deleting a site removes it from this phone. If a Sync Connection is set up below, it also removes that site's rows from the Google Sheet — nothing is left behind to tidy up later.</p>
+
+  <div class="settings-card">
+    <h4>${icon('cloud',14)} Google Sheet Connection</h4>
+    <div class="field-group"><label>Web App URL</label>
+      <input type="text" id="syncUrlInput" value="${syncConfig.url}" placeholder="https://script.google.com/macros/s/.../exec"></div>
+    <div class="field-group"><label>Secret Key</label>
+      <input type="text" id="syncSecretInput" value="${syncConfig.secret}" placeholder="Shared secret from your Apps Script"></div>
+    <button class="btn" onclick="saveSyncConfig()">${icon('settings',16)} Save Connection</button>
+  </div>
+
+  <div class="settings-card">
+    <h4>${icon('key',14)} Manager Access (optional)</h4>
+    <p style="font-size:11.5px;color:var(--muted);margin:0 0 12px;line-height:1.5;">Separate from the key above — only needed if you're the manager viewing all sites. Leave blank on regular field phones.</p>
+    <div class="field-group"><label>Admin Key</label>
+      <input type="text" id="adminKeyInput" value="${syncConfig.adminKey||''}" placeholder="Admin key from your Apps Script"></div>
+    <button class="btn secondary" onclick="saveSyncConfig()">${icon('key',16)} Save Admin Key</button>
+  </div>`;
+
+  if(syncLog.length){
+    html += `<div class="settings-card"><h4>${icon('clipboard',14)} Recent Sync Activity</h4>`;
+    syncLog.slice(0,6).forEach(l=>{
+      html += `<div class="sync-log-row"><span>${l.time}</span><span class="st ${l.ok?'ok':'err'}">${l.ok? 'Synced ✓' : 'Failed'}</span></div>`;
+    });
+    html += `</div>`;
+  }
+
+  document.getElementById('main').innerHTML = `<div class="view-fade">${html}</div>`;
+}
+async function switchSite(name){
+  if(name === activeSite) return;
+  activeSite = name;
+  await saveMeta();
+  await loadSiteData();
+  toast('Switched to ' + name);
+  go('home');
+}
+async function saveSyncConfig(){
+  const urlEl = document.getElementById('syncUrlInput');
+  const secretEl = document.getElementById('syncSecretInput');
+  const adminEl = document.getElementById('adminKeyInput');
+  if(urlEl) syncConfig.url = urlEl.value.trim();
+  if(secretEl) syncConfig.secret = secretEl.value.trim();
+  if(adminEl) syncConfig.adminKey = adminEl.value.trim();
+  await idbSet('meta:config', JSON.stringify(syncConfig));
+  toast('Saved');
+}
+
+async function deleteSite(name){
+  if(!confirm('Delete "' + name + '" from this phone' + (syncConfig.url && syncConfig.secret ? ' and from the Google Sheet' : '') + '? This cannot be undone.')) return;
+  if(!confirm('Are you absolutely sure? All local data for this site will be erased.')) return;
+
+  let remoteOk = null;
+  if(syncConfig.url && syncConfig.secret){
+    try{
+      const resp = await fetch(syncConfig.url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ secret: syncConfig.secret, site: name, action: 'delete' }),
+      });
+      const text = await resp.text();
+      let json = null;
+      try{ json = JSON.parse(text); }catch(e){}
+      remoteOk = !!(resp.ok && json && json.ok);
+    }catch(e){ remoteOk = false; }
+  }
+
+  // remove local data keys for this site
+  const idsToClear = [...CHECKLIST_SECTIONS.map(s=>s.id), 'strings','earthing','protection','punchlist','equipment','signoff'];
+  for(const id of idsToClear){ await idbDelete('data:'+name+':'+id); }
+  await idbDelete('meta:dirty:'+name);
+
+  knownSites = knownSites.filter(s=>s!==name);
+  if(activeSite === name){
+    activeSite = knownSites.length ? knownSites[0] : null;
+  }
+  await saveMeta();
+
+  if(remoteOk === true) toast('Site deleted (removed from Google Sheet too)');
+  else if(remoteOk === false) toast('Deleted locally — could not reach Google Sheet, remove rows manually');
+  else toast('Site deleted from this phone');
+
+  if(activeSite){ await loadSiteData(); go('settings'); }
+  else { promptNewSite(true); }
+}
+
+/* ============================================================
+   RENDER: EXPORT / SYNC NOW
+=============================================================*/
+function buildPayload(){
+  return {
+    site: activeSite,
+    exportedAt: new Date().toISOString(),
+    checklists: Object.fromEntries(CHECKLIST_SECTIONS.map(s=>[s.id, s.items.map((label,i)=>({item:label, ...state[s.id][i]}))])),
+    strings: state.strings,
+    earthing: {
+      measures: Object.fromEntries(EARTH_POINTS.map(p=>[p.label, state.earthing.measures[p.key]])),
+      checks: EARTH_CHECKS.map((label,i)=>({item:label, ...state.earthing.checks[i]})),
+    },
+    protection: Object.fromEntries(PROTECTION_ITEMS.map(p=>[p.label, state.protection[p.key]])),
+    punchlist: state.punchlist,
+    equipment: state.equipment,
+    signoff: state.signoff,
+  };
+}
+function renderExport(){
+  setHeader('Export / Sync Now', activeSite, true);
+  const payload = buildPayload();
+  const json = JSON.stringify(payload, null, 2);
+  const hasConfig = syncConfig.url && syncConfig.secret;
+  let html = `
+    ${!hasConfig ? `<div class="note-box">${icon('info',16)}<div>No Google Sheet connected yet. Add your Web App URL and Secret Key in Sync Settings, or just copy the JSON below for now.</div></div>` : ''}
+    <button class="btn" id="syncNowBtn" ${!hasConfig?'style="opacity:.5;pointer-events:none;"':''}>${icon('cloud',16)} Sync to Google Sheet</button>
+    <button class="btn secondary" onclick="go('settings')">${icon('settings',16)} Sync Settings</button>
+    <div class="section-title">Copy Manually</div>
+    <p style="font-size:12px;color:var(--muted);margin:0 0 10px;">Or copy this and paste into your Smart PV Solar chat with Claude to merge into the Word report.</p>
+    <button class="btn secondary" id="copyBtn">Copy All Data as JSON</button>
+    <textarea class="export-box-area" id="exportArea" readonly>${json.replace(/</g,'&lt;')}</textarea>
+    <div class="section-title">Danger Zone</div>
+    <button class="btn danger" id="resetBtn">Reset This Site's Data</button>
+  `;
+  document.getElementById('main').innerHTML = `<div class="view-fade">${html}</div>`;
+
+  document.getElementById('copyBtn').addEventListener('click', async ()=>{
+    const area = document.getElementById('exportArea');
+    try{ await navigator.clipboard.writeText(json); toast('Copied to clipboard'); }
+    catch(e){ area.removeAttribute('readonly'); area.focus(); area.select(); toast('Long-press below to copy manually'); }
+  });
+
+  if(hasConfig){
+    document.getElementById('syncNowBtn').addEventListener('click', syncNow);
+  }
+
+  document.getElementById('resetBtn').addEventListener('click', async ()=>{
+    if(!confirm('This will erase all data captured for "' + activeSite + '" on this device. Continue?')) return;
+    if(!confirm('Are you absolutely sure? This cannot be undone.')) return;
+    for(const s of CHECKLIST_SECTIONS){ state[s.id] = s.items.map(()=>({status:null, remarks:''})); await idbSet(skey(s.id), JSON.stringify(state[s.id])); }
+    state.strings = buildDefaultStrings(); await idbSet(skey('strings'), JSON.stringify(state.strings));
+    state.earthing = { measures: Object.fromEntries(EARTH_POINTS.map(p=>[p.key,{value:'',result:null}])), checks: EARTH_CHECKS.map(()=>({status:null, remarks:''})) };
+    await idbSet(skey('earthing'), JSON.stringify(state.earthing));
+    state.protection = Object.fromEntries(PROTECTION_ITEMS.map(p=>[p.key,{applied:'',result:null}]));
+    await idbSet(skey('protection'), JSON.stringify(state.protection));
+    state.punchlist = DEFAULT_PUNCHLIST.map(t=>({text:t, status:'Open', remarks:''}));
+    await idbSet(skey('punchlist'), JSON.stringify(state.punchlist));
+    state.equipment = DEFAULT_EQUIPMENT.map(n=>({name:n, model:'', serial:'', cal:'', due:''}));
+    await idbSet(skey('equipment'), JSON.stringify(state.equipment));
+    state.signoff = { engineer:{name:'',designation:'',date:''}, supervisor:{name:'',designation:'',date:''}, mes:{name:'',designation:'',date:''} };
+    await idbSet(skey('signoff'), JSON.stringify(state.signoff));
+    dirtyCount = 0; await idbSet('meta:dirty:'+activeSite, JSON.stringify(0));
+    toast('Site data reset');
+    go('home');
+  });
+}
+
+async function syncNow(){
+  const btn = document.getElementById('syncNowBtn');
+  const originalHtml = btn.innerHTML;
+  btn.innerHTML = 'Syncing…'; btn.style.pointerEvents = 'none';
+  const payload = buildPayload();
+  let ok = false, errMsg = '';
+  try{
+    const resp = await fetch(syncConfig.url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ secret: syncConfig.secret, site: activeSite, payload }),
+    });
+    const text = await resp.text();
+    let json = null;
+    try{ json = JSON.parse(text); }catch(e){}
+    if(resp.ok && json && json.ok){ ok = true; }
+    else { errMsg = (json && json.error) || ('HTTP ' + resp.status); }
+  }catch(e){ errMsg = e.message || 'Network error'; }
+
+  const entry = { time: new Date().toLocaleString(), ok, err: errMsg };
+  syncLog.unshift(entry);
+  syncLog = syncLog.slice(0,20);
+  await idbSet('meta:synclog', JSON.stringify(syncLog));
+
+  if(ok){
+    dirtyCount = 0;
+    await idbSet('meta:dirty:'+activeSite, JSON.stringify(0));
+    toast('Synced to Google Sheet ✓');
+  } else {
+    toast('Sync failed: ' + (errMsg || 'unknown error'));
+  }
+  updateSyncPill();
+  btn.innerHTML = originalHtml; btn.style.pointerEvents = '';
+}
+
+/* ============================================================
+   RENDER: MANAGER DASHBOARD
+=============================================================*/
+let managerDetailSite = null;
+
+function renderManager(){
+  setHeader('Manager Dashboard', 'All synced sites', true);
+  if(!syncConfig.url){
+    document.getElementById('main').innerHTML = `<div class="view-fade"><div class="note-box">${icon('info',16)}<div>No Google Sheet connection configured yet. Set up Sync Settings first.</div></div>
+      <button class="btn secondary" onclick="go('settings')">${icon('settings',16)} Go to Sync Settings</button></div>`;
+    return;
+  }
+  if(!syncConfig.adminKey){
+    document.getElementById('main').innerHTML = `<div class="view-fade"><div class="admin-unlock">
+      <h4>${icon('key',15)} Admin key required</h4>
+      <p style="font-size:12px;color:var(--muted);margin:0 0 12px;">Enter the admin key to view all sites synced by any phone.</p>
+      <input type="text" id="inlineAdminKey" placeholder="Admin key">
+      <button class="btn" style="margin-top:12px;" onclick="unlockManager()">${icon('key',16)} Unlock</button>
+    </div></div>`;
+    return;
+  }
+  document.getElementById('main').innerHTML = `<div class="view-fade"><div class="empty">Loading synced sites…</div></div>`;
+  fetchManagerList();
+}
+async function unlockManager(){
+  const key = document.getElementById('inlineAdminKey').value.trim();
+  if(!key) return;
+  syncConfig.adminKey = key;
+  await idbSet('meta:config', JSON.stringify(syncConfig));
+  render();
+}
+async function fetchManagerList(){
+  try{
+    const url = syncConfig.url + '?action=list&adminKey=' + encodeURIComponent(syncConfig.adminKey);
+    const resp = await fetch(url);
+    const json = await resp.json();
+    if(!json.ok){ throw new Error(json.error || 'Request failed'); }
+    renderManagerList(json.sites || []);
+  }catch(e){
+    document.getElementById('main').innerHTML = `<div class="view-fade"><div class="note-box">${icon('info',16)}<div>Could not load sites: ${(e.message||'network error')}. Check your connection and Admin Key.</div></div>
+      <button class="btn secondary" onclick="go('manager')">${icon('sync',16)} Retry</button></div>`;
+  }
+}
+function renderManagerList(sites){
+  if(!sites.length){
+    document.getElementById('main').innerHTML = `<div class="view-fade"><div class="empty">No sites have synced to the Sheet yet.</div></div>`;
+    return;
+  }
+  let html = '';
+  sites.forEach(s=>{
+    const tot = (s.pass||0)+(s.fail||0)+(s.pending||0) || 1;
+    html += `<div class="manager-site-card" onclick="openManagerDetail('${s.site.replace(/'/g,"\\\\'")}')">
+      <div class="msc-top"><div class="msc-name">${s.site}</div><div class="msc-time">${s.lastUpdated ? new Date(s.lastUpdated).toLocaleDateString() : ''}</div></div>
+      <div class="msc-chips">
+        <div class="c pass">${s.pass||0} Pass</div>
+        <div class="c fail">${s.fail||0} Fail</div>
+        <div class="c pending">${s.pending||0} Pend.</div>
+      </div>
+    </div>`;
+  });
+  document.getElementById('main').innerHTML = `<div class="view-fade">${html}</div>`;
+}
+async function openManagerDetail(site){
+  managerDetailSite = site;
+  go('managerDetail');
+}
+async function renderManagerDetail(){
+  setHeader(managerDetailSite, 'Read-only — synced data', true);
+  document.getElementById('main').innerHTML = `<div class="view-fade"><div class="empty">Loading…</div></div>`;
+  try{
+    const url = syncConfig.url + '?action=detail&site=' + encodeURIComponent(managerDetailSite) + '&adminKey=' + encodeURIComponent(syncConfig.adminKey);
+    const resp = await fetch(url);
+    const json = await resp.json();
+    if(!json.ok){ throw new Error(json.error || 'Request failed'); }
+    paintManagerDetail(json.data);
+  }catch(e){
+    document.getElementById('main').innerHTML = `<div class="view-fade"><div class="note-box">${icon('info',16)}<div>Could not load site detail: ${(e.message||'network error')}.</div></div></div>`;
+  }
+}
+function chipFor(status){
+  const s = (status||'').toLowerCase();
+  if(s==='pass') return `<span class="ro-chip pass">Pass</span>`;
+  if(s==='fail') return `<span class="ro-chip fail">Fail</span>`;
+  if(s) return `<span class="ro-chip na">${status}</span>`;
+  return `<span class="ro-chip pending">Pending</span>`;
+}
+function paintManagerDetail(d){
+  let html = '';
+  const bySections = {};
+  (d.checklists||[]).forEach(row=>{
+    (bySections[row.section] = bySections[row.section] || []).push(row);
+  });
+  Object.keys(bySections).forEach(section=>{
+    html += `<div class="section-title">${section}</div><div class="item">`;
+    bySections[section].forEach(row=>{
+      html += `<div class="ro-row"><div class="lbl">${row.item}</div>${chipFor(row.status)}</div>`;
+    });
+    html += `</div>`;
+  });
+
+  const strs = d.strings || [];
+  const strFail = strs.filter(s=>s.result==='fail');
+  html += `<div class="section-title">String Test Log</div><div class="item">
+    <div class="ro-row"><div class="lbl">Total strings tested</div><div class="ro-chip na">${strs.filter(s=>s.result).length}/${strs.length}</div></div>
+    <div class="ro-row"><div class="lbl">Failed strings</div><div class="ro-chip ${strFail.length?'fail':'pass'}">${strFail.length}</div></div>
+    ${strFail.map(s=>`<div class="ro-row"><div class="lbl">${s.id} (${s.inverter})</div>${chipFor(s.result)}</div>`).join('')}
+  </div>`;
+
+  html += `<div class="section-title">Earthing</div><div class="item">`;
+  (d.earthing && d.earthing.measures || []).forEach(m=>{
+    html += `<div class="ro-row"><div class="lbl">${m.point}</div><div class="ro-chip na">${m.value||'—'} Ω</div></div>`;
+  });
+  html += `</div>`;
+
+  html += `<div class="section-title">Punch List</div><div class="item">`;
+  const open = (d.punchlist||[]).filter(p=>p.status==='Open');
+  if(!open.length) html += `<div class="ro-row"><div class="lbl">No open items</div><span class="ro-chip pass">Clear</span></div>`;
+  open.forEach(p=> html += `<div class="ro-row"><div class="lbl">${p.item}</div><span class="ro-chip fail">Open</span></div>`);
+  html += `</div>`;
+
+  html += `<div class="section-title">Sign-Off</div><div class="item">`;
+  (d.signoff||[]).forEach(s=>{
+    html += `<div class="ro-row"><div class="lbl">${s.role}${s.name?' — '+s.name:''}</div>${s.name && s.date ? '<span class="ro-chip pass">Signed</span>' : '<span class="ro-chip pending">Pending</span>'}</div>`;
+  });
+  html += `</div>`;
+
+  document.getElementById('main').innerHTML = `<div class="view-fade">${html}</div>`;
+}
+
+/* ============================================================
+   ROUTER
+=============================================================*/
+function render(){
+  if(currentView==='home') renderHome();
+  else if(CHECKLIST_SECTIONS.find(s=>s.id===currentView)) renderChecklist(currentView);
+  else if(currentView==='strings') renderStrings();
+  else if(currentView==='earthing') renderEarthing();
+  else if(currentView==='protection') renderProtection();
+  else if(currentView==='punchlist') renderPunchlist();
+  else if(currentView==='equipment') renderEquipment();
+  else if(currentView==='signoff') renderSignoff();
+  else if(currentView==='settings') renderSettings();
+  else if(currentView==='export') renderExport();
+  else if(currentView==='manager') renderManager();
+  else if(currentView==='managerDetail') renderManagerDetail();
+}
+
+/* ============================================================
+   INIT
+=============================================================*/
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
+  });
+}
+
+(async function init(){
+  await loadMeta();
+  if(!activeSite || !knownSites.length){
+    promptNewSite(true);
+    return;
+  }
+  await loadSiteData();
+  render();
+})();
+</script>
+</body>
+</html>
